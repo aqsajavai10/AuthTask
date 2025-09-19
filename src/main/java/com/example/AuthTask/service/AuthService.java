@@ -7,6 +7,7 @@ import com.example.AuthTask.dao.dto.RegisterRequest;
 import com.example.AuthTask.dao.entity.User;
 import com.example.AuthTask.dao.repository.UserRepository;
 import com.example.AuthTask.exception.BadRequestException;
+import com.example.AuthTask.exception.InvalidCredentialsException;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.stereotype.Service;
@@ -33,6 +34,9 @@ public class AuthService {
     public AuthResponse login(AuthRequest req) {
         User user = userRepository.findByEmail(req.getEmail())
                 .orElseThrow(() -> new BadRequestException("Invalid credentials"));
+        if (user == null || !passwordEncoder.matches(req.getPassword(), user.getPassword())) {
+            throw new InvalidCredentialsException("Username or password is incorrect.");
+        }
 
         if (!passwordEncoder.matches(req.getPassword(), user.getPassword())) {
             throw new BadRequestException("Invalid credentials");

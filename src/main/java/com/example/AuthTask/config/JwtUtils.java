@@ -1,17 +1,18 @@
 package com.example.AuthTask.config;
 
-
 import io.jsonwebtoken.*;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
+
 import java.util.Date;
 
 @Component
 public class JwtUtils {
-    @Value("${jwt.secret:secret-key-please-change}")
+
+    @Value("${jwt.secret}")  // ✅ No default value
     private String jwtSecret;
 
-    @Value("${jwt.expiration-ms:3600000}")
+    @Value("${jwt.expiration-ms}") // ✅ No default value
     private long jwtExpirationMs;
 
     public String generateToken(Long userId, String email) {
@@ -25,7 +26,10 @@ public class JwtUtils {
     }
 
     public Long getUserIdFromToken(String token) {
-        Claims claims = Jwts.parser().setSigningKey(jwtSecret.getBytes()).parseClaimsJws(token).getBody();
+        Claims claims = Jwts.parser()
+                .setSigningKey(jwtSecret.getBytes())
+                .parseClaimsJws(token)
+                .getBody();
         return Long.valueOf(claims.getSubject());
     }
 
@@ -37,5 +41,17 @@ public class JwtUtils {
             return false;
         }
     }
-}
 
+    public boolean isExpired(String token) {
+        try {
+            Date expiration = Jwts.parser()
+                    .setSigningKey(jwtSecret.getBytes())
+                    .parseClaimsJws(token)
+                    .getBody()
+                    .getExpiration();
+            return expiration.before(new Date());
+        } catch (JwtException e) {
+            return true; // Treat parsing failure as expired/invalid
+        }
+    }
+}
