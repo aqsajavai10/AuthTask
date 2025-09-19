@@ -1,6 +1,5 @@
 package com.example.AuthTask.service;
 
-
 import com.example.AuthTask.dao.dto.TaskDto;
 import com.example.AuthTask.dao.entity.Task;
 import com.example.AuthTask.dao.entity.User;
@@ -8,6 +7,7 @@ import com.example.AuthTask.dao.repository.TaskRepository;
 import com.example.AuthTask.dao.repository.UserRepository;
 import com.example.AuthTask.exception.ForbiddenException;
 import com.example.AuthTask.exception.NotFoundException;
+import com.example.AuthTask.exception.UnauthorizedAccessException;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import java.util.List;
@@ -38,17 +38,27 @@ public class TaskService {
     }
 
     public TaskDto updateStatus(Long userId, Long taskId, String newStatus) {
-        User user = userRepository.findById(userId).orElseThrow(() -> new NotFoundException("User not found"));
-        Task task = taskRepository.findById(taskId).orElseThrow(() -> new NotFoundException("Task not found"));
-        if (!task.getUser().getId().equals(user.getId())) throw new ForbiddenException("Not allowed");
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new NotFoundException("User not found"));
+        Task task = taskRepository.findById(taskId)
+                .orElseThrow(() -> new NotFoundException("Task not found"));
+
+        if (!task.getUser().getId().equals(user.getId())) {
+            throw new UnauthorizedAccessException("You cannot update another user's task");
+        }
+
         task.setStatus(newStatus);
         Task updated = taskRepository.save(task);
         return toDto(updated);
     }
 
     public void deleteTask(Long userId, Long taskId) {
-        Task task = taskRepository.findById(taskId).orElseThrow(() -> new NotFoundException("Task not found"));
-        if (!task.getUser().getId().equals(userId)) throw new ForbiddenException("Not allowed");
+        Task task = taskRepository.findById(taskId)
+                .orElseThrow(() -> new NotFoundException("Task not found"));
+
+        if (!task.getUser().getId().equals(userId)) {
+            throw new UnauthorizedAccessException("You cannot delete another user's task");
+        }
         taskRepository.delete(task);
     }
 

@@ -1,6 +1,7 @@
 package com.example.AuthTask.config;
 
 import com.example.AuthTask.dao.repository.UserRepository;
+import com.example.AuthTask.service.TokenBlacklistService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -17,6 +18,7 @@ public class SecurityConfig {
 
     private final JwtUtils jwtUtils;
     private final UserRepository userRepository;
+    private final TokenBlacklistService tokenBlacklistService; // ✅ Add this
 
     @Bean
     public BCryptPasswordEncoder passwordEncoder() {
@@ -25,21 +27,20 @@ public class SecurityConfig {
 
     @Bean
     public JwtAuthenticationFilter jwtAuthenticationFilter() {
-        return new JwtAuthenticationFilter(jwtUtils, userRepository);
+        // ✅ Use injected fields here
+        return new JwtAuthenticationFilter(jwtUtils, userRepository, tokenBlacklistService);
     }
 
     @Bean
     public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
         http
                 .csrf(csrf -> csrf.disable())
-
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers("/auth/**", "/h2-console/**").permitAll()
                         .anyRequest().authenticated()
                 )
-
                 .headers(headers -> headers.frameOptions(frame -> frame.sameOrigin()))
-
+                // ✅ Now this works because jwtAuthenticationFilter() is a bean
                 .addFilterBefore(jwtAuthenticationFilter(), UsernamePasswordAuthenticationFilter.class);
 
         return http.build();
